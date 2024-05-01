@@ -1,0 +1,682 @@
+services:
+
+
+######################### api #########################
+  api_model:
+    container_name: api_model
+    restart: always
+    build:
+      context: ./fastapi-postgres-model-tdd
+      dockerfile: dockerfile
+    ports:
+      - 8010:8010
+    depends_on:
+      - mariadb
+    environment:
+        CONTAINER_NAME: api_model
+    networks:
+      - my_network
+
+
+######################### MariaDb #########################
+
+  mariadb:
+    container_name: mariadb
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ${PATH_DB}:/var/lib/mysql 
+      #Se quiser iniciar um banco pelo docker
+      #- ./db.sql:/docker-entrypoint-initdb.d/argus_db.sql
+    ports:
+      - 3306:3306
+    networks:
+      - my_network
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin
+    restart: always
+    depends_on: 
+      - mariadb
+    ports:
+      - 50033:80
+    environment:
+      - PMA_ARBITRARY=1
+    networks:
+      - my_network
+
+######################### Redis #########################
+#   redis:
+#     container_name: redis
+#     image: redis:latest
+#     restart: always
+#     ports:
+#       - 50030:6379
+#     command: redis-server --maxmemory 50GB --maxmemory-policy allkeys-lru --save "" --appendonly no #--requirepass sua_senha_aqui
+#     networks:
+#       - my_network
+    
+#   redis_insight:
+#     image: redislabs/redisinsight:latest
+#     container_name: redis_insight
+#     restart: always
+#     ports:
+#       - 50031:5540
+# #    volumes:
+# #      - ${PATH_REDIS_INSIGHT}:/db
+#     networks:
+#       - my_network
+
+######################### Mongo #########################
+  # mongo:
+  #   image: mongo
+  #   restart: always
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: example
+
+  # mongo-express:
+  #   image: mongo-express
+  #   restart: always
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: root
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: example
+  #     ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+  #     ME_CONFIG_BASICAUTH: false
+
+
+######################### Prometheus #########################
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - 50034:9090
+  #   restart: always
+  #   networks:
+  #     - my_network
+
+  # ## Comando para acabar com o erro de permicao
+  # ## sudo chown -R 472:472 ./grafana_data 
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   volumes:
+  #     -  ${PATH_GRAFANA}:/var/lib/grafana  # Bind mount for Grafana data persistence
+  #   ports:
+  #     - 50035:3000
+  #   restart: always
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - my_network
+
+######################### Elasticsearch #########################
+
+  # elasticsearch:
+  #   container_name: elasticsearch
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   environment:
+  #     discovery.type: "single-node"
+  #     ES_JAVA_OPTS: "-Xms2g -Xmx2g"
+  #     xpack.monitoring.enabled: "true"
+  #     ELASTICSEARCH_USERNAME: root
+  #     ELASTICSEARCH_PASSWORD: elastic
+  #   volumes:
+  #     - ${PATH_ELASTICSEARCH}:/usr/share/elasticsearch/data
+  #   networks:
+  #     - my_network
+    
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:7.15.1
+  #   container_name: kibana_01
+  #   ports:
+  #     - 5601:5601
+  #   environment:
+  #     ELASTICSEARCH_URL: http://elasticsearch:9200
+  #     ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+  #     ELASTICSEARCH_USERNAME: root
+  #     ELASTICSEARCH_PASSWORD: elastic
+  #   networks:
+  #     - my_network
+
+
+networks:
+  my_network:
+    driver: bridge
+    name: my_network
+
+
+
+
+
+
+  # filebeat:
+  #   build:
+  #       context: ./filebeat
+  #   container_name: filebeat
+  #   volumes:
+  #     - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+  #     - ./test.log:/var/log/app_logs/test.log
+  #   depends_on:
+  #       - elasticsearch
+  #       - kibana
+  #   networks:
+  #     - my_network    
+  #   environment:
+  #       ELASTICSEARCH_HOSTS: https://es01:9200
+  #       ELASTICSEARCH_USERNAME: elastic
+  #       ELASTICSEARCH_PASSWORD: elastic
+  #       ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: config/certs/ca/ca.crt
+  #   command: 
+  #     - chmod go-w /usr/share/filebeat/filebeat.yml
+
+
+
+
+
+# #  backupservice:
+# #    container_name: backupservice
+# #    restart: always
+# #    build:
+# #      context: ./BackupService
+# #      dockerfile: Dockerfile
+# #    volumes:  
+# #      - ${PATH_LOG}:/argus_system_log
+# #      - ${PATH_IMAGE}:/image_save
+# #      - ${PATH_BACKUP}:/argus_system_backup
+# #    ports:
+# #      - ${BS_PROMETHEUS_PORT}:50042
+# #    depends_on:
+# #      - mariadb
+# #    environment:
+# #        CONTAINER_NAME: backupservice
+
+# #        MARIADB_HOST: ${BS_MARIADB_HOST}FROM python:3.9 as requirements-stage
+
+# #        MARIADB_USER: ${BS_MARIADB_USER}
+# #        MARIADB_PASSWORD:  ${BS_MARIADB_PASSWORD}
+# #        MARIADB_DATABASE: ${BS_MARIADB_DATABASE}
+# #        MARIADB_PORT: ${BS_MARIADB_PORT}
+
+# #        NUMBER_IMAGES_BATCH: ${BS_NUMBER_IMAGES_BATCH}
+
+# #    networks:
+# #      - my_network_argus
+
+#   metricsexporter:
+#     container_name: metricsexporter
+#     restart: always
+#     build:
+#       context: ./MetricsExporter
+#       dockerfile: Dockerfile
+#     ports:
+#       - "${ME_PROMETHEUS_PORT}:50042"
+#     environment:
+#       TIME_SLEEP: ${ME_TIME_SLEEP}
+#       URL_TAG_DOC_GAUGE: ${ME_URL_TAG_DOC_GAUGE}
+
+#     networks:
+#       - my_network_argus
+
+#   coilcreatorservice:
+#     container_name: coilcreatorservice
+#     restart: always
+#     build:
+#       context: ./CoilCreatorService
+#       dockerfile: Dockerfile
+#     volumes:
+#       - ${PATH_LOG}:/argus_system_log
+#       #- ${PATH_IMAGE}:/image_save
+#       - ${PATH_BACKUP}:/argus_system_backup
+#     environment:
+#       CONTAINER_NAME: coilcreatorservice
+    
+#       REDIS_HOST: ${TCS_REDIS_HOST}
+#       REDIS_PORT: ${TCS_REDIS_PORT}
+#       REDIS_DB: ${TCS_REDIS_DB}
+
+#       MARIADB_HOST: ${TCS_MARIADB_HOST}
+#       MARIADB_USER: ${TCS_MARIADB_USER}
+#       MARIADB_PASSWORD: ${TCS_MARIADB_PASSWORD}
+#       MARIADB_DATABASE: ${TCS_MARIADB_DATABASE}
+#       MARIADB_PORT: ${TCS_MARIADB_PORT}
+
+#       REDIS_KEY_FIRST_CAM_PUB: ${TCS_REDIS_KEY_FIRST_CAM_PUB}
+#       REDIS_KEY_SECOND_CAM_PUB: ${TCS_REDIS_KEY_SECOND_CAM_PUB}
+
+#       TRAKING_UM_FIRST_CAM: ${TCS_FIRST_CAM_TRACKING_VALUE}
+#       TRAKING_UM_SECOND_CAM: ${TCS_SECOND_CAM_TRACKING_VALUE}
+
+#       MAX_ERROR_CONT: ${TCS_MAX_ERROR_CONT}
+
+#     depends_on:
+#       - redis
+#       - mariadb
+#     networks:
+#       - my_network_argus
+
+# #  inferenceservice:
+# #    container_name: inferenceservice
+# #    restart: always
+# #    build:
+# #      context: ./InferenceService
+# #      dockerfile: Dockerfile
+# #    volumes:  
+# #      - ${PATH_LOG}:/argus_system_log
+# #      - ${PATH_IMAGE}:/image_save
+# #      - ${PATH_BACKUP}:/argus_system_backup
+# #    depends_on:
+# #      - redis
+# #      - daqservice_sup
+# #    environment:
+# #      CONTAINER_NAME: inferenceservice
+# #    #  REDIS_PORT: ${LS_SUP_REDIS_PORT_1}
+# #    #  REDIS_HOST: ${LS_SUP_REDIS_HOST_1}
+# #    #  REDIS_DB: ${LS_SUP_REDIS_DB_1}
+# #    #  REDIS_STREAM_KEY: ${LS_SUP_REDIS_STREAM_KEY_1}
+# #    #  REDIS_LEN_STREAM: ${LS_SUP_REDIS_LEN_STREAM_1}
+# #      
+# #      MARIADB_HOST: ${IS_MARIADB_HOST}
+# #      MARIADB_USER: ${IS_MARIADB_USER}
+# #      MARIADB_PASSWORD:  ${IS_MARIADB_PASSWORD}
+# #      MARIADB_DATABASE: ${IS_MARIADB_DATABASE}
+# #      MARIADB_PORT: ${IS_MARIADB_PORT}
+# #
+# #      NUMBER_IMAGES_BATCH: ${IS_NUMBER_IMAGES_BATCH}
+# #      MODEL_PATH: ${IS_MODEL_PATH}
+# #      TYPE_IMAGE: 2
+      
+
+# #    deploy:
+# #      resources:
+# #        reservations:
+# #          devices:
+# #            - driver: nvidia
+# #             # count: 1
+# #              capabilities: [gpu]
+
+
+#   buldogbackend:
+#     container_name: buldogbackend
+#     restart: always
+#     build:
+#       context: ./buldog_backend_go/backend
+#       dockerfile: Dockerfile
+#     depends_on:
+#       - mariadb
+#     ports:
+#       - ${BULDOG_SUP_BACKEND_PORT}:8085
+#     volumes:
+#       - ${PATH_LOG}:/argus_system_log
+#       - ${PATH_IMAGE}:/image_save
+#       - ${PATH_BACKUP}:/argus_system_backup
+#     networks:
+#       - my_network_argus
+
+
+#   buldogfrontend:
+#     container_name: buldogfrontend
+#     restart: always
+#     build:
+#       context: ./buldog_frontend/frontend
+#       dockerfile: Dockerfile
+#     depends_on:
+#       - buldogbackend
+#     ports:
+#      - ${BULDOG_SUP_FRONTEND_PORT1}:3000
+#     volumes:
+#       - ${PATH_LOG}:/argus_system_log
+#       #- ${PATH_IMAGE}:/image_save
+#       - ${PATH_BACKUP}:/argus_system_backup
+#     networks:
+#       - my_network_argus
+
+# ##########################################################################
+
+#   ### Cam Sup ###
+
+#   daqservice_sup:
+#     container_name: daqservice_sup
+#     restart: always
+#     build:
+#       context: ./DaqService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+#     depends_on:
+#       - redis
+#       - coilcreatorservice
+#     environment:
+#       CONTAINER_NAME: daqservice_sup
+      
+#       REDIS_HOST: ${DS_SUP_REDIS_HOST}
+#       REDIS_PORT: ${DS_SUP_REDIS_PORT}
+#       REDIS_DB: ${DS_SUP_REDIS_DB}
+#       REDIS_STREAM_KEY: ${DS_SUP_REDIS_STREAM_KEY}
+#       REDIS_LEN_STREAM: ${DS_SUP_REDIS_LEN_STREAM}
+#       CONFIG_CLASS_DALSA_IMAGE_HANDLER: ${DS_SUP_CONFIG_CLASS_DALSA_IMAGE_HANDLER}
+#       CAM_USER_ID: ${DS_SUP_CAM_USER_ID}
+#       REDIS_PUBSUB_KEY: ${DS_SUP_REDIS_PUBSUB_KEY}
+#       PROMETHEUS_PORT: ${DS_SUP_PROMETHEUS_PORT}
+
+#     network_mode: "host"
+
+#   linestitchservice_sup:
+#     container_name: linestitchservice_sup
+#     restart: always
+#     build:
+#       context: ./LineStitchService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+#     ports:
+#       - ${LS_SUP_PROMETHEUS_PORT}:50042
+#     depends_on:
+#       - redis
+#       - daqservice_sup
+#     environment:
+#       CONTAINER_NAME: linestitchservice_sup
+
+#       MARIADB_HOST: ${LS_SUP_MARIADB_HOST}
+#       MARIADB_USER: ${LS_SUP_MARIADB_USER}
+#       MARIADB_PASSWORD:  ${LS_SUP_MARIADB_PASSWORD}
+#       MARIADB_DATABASE: ${LS_SUP_MARIADB_DATABASE}
+#       MARIADB_PORT: ${LS_SUP_MARIADB_PORT}
+
+#       PROMETHEUS_PORT: ${LS_SUP_PROMETHEUS_PORT}
+
+#       REDIS_PORT_1: ${LS_SUP_REDIS_PORT_1}
+#       REDIS_HOST_1: ${LS_SUP_REDIS_HOST_1}
+#       REDIS_DB_1: ${LS_SUP_REDIS_DB_1}
+#       REDIS_STREAM_KEY_1: ${LS_SUP_REDIS_STREAM_KEY_1}
+#       REDIS_LEN_STREAM_1: ${LS_SUP_REDIS_LEN_STREAM_1}
+
+#       REDIS_PORT_2: ${LS_SUP_REDIS_PORT_2}
+#       REDIS_HOST_2: ${LS_SUP_REDIS_HOST_2}
+#       REDIS_DB_2: ${LS_SUP_REDIS_DB_2}
+#       REDIS_STREAM_KEY_2: ${LS_SUP_REDIS_STREAM_KEY_2}
+#       REDIS_LEN_STREAM_2: ${LS_SUP_REDIS_LEN_STREAM_2}
+
+#       IMG_WIDTH: ${LS_SUP_IMG_WIDTH}
+#       TILE_HEIGHT: ${LS_SUP_TILE_HEIGHT}
+#       CONCAT_HEIGHT: ${LS_SUP_CONCAT_HEIGHT}
+
+#       CONVERSION_RATIO: ${LS_SUP_CONVERSION_RATIO}
+#       THRESHOLD_VALUE: ${LS_SUP_THRESHOLD_VALUE}
+
+#       OP_KSIZE_0: ${LS_SUP_OP_KSIZE_0}
+#       OP_KSIZE_1: ${LS_SUP_OP_KSIZE_1}
+
+#       CL_KSIZE_0: ${LS_SUP_CL_KSIZE_0}
+#       CL_KSIZE_1: ${LS_SUP_CL_KSIZE_1}
+
+
+#       ITERATIONS: ${LS_SUP_ITERATIONS}
+#       RADIUS: ${LS_SUP_RADIUS}
+#       PI: ${LS_SUP_PI}
+
+#       SAMPLING_INTERVAL: ${LS_SUP_SAMPLING_INTERVAL}
+#       MEAS_DISTANCE: ${LS_SUP_MEAS_DISTANCE}
+
+#       MAX_DEVIATION: ${LS_SUP_MAX_DEVIATION}
+#       SAFETY_MARGIN: ${LS_SUP_SAFETY_MARGIN}
+#       WIDTH_DEVIATION: ${LS_SUP_WIDTH_DEVIATION}
+      
+#       REFERENCE_CENTER: ${LS_SUP_REFERENCE_CENTER}
+#       LARGEST_WIDTH: ${LS_SUP_LARGEST_WIDTH}
+
+#       IMAGE_NUMBER_ROTATE_DEGREES_90: ${LS_SUP_IMAGE_NUMBER_ROTATE_DEGREES_90}
+
+#     networks:
+#       - my_network_argus
+
+
+#   writetostorageservice_sup:
+#     container_name: writetostorageservice_sup
+#     restart: always
+#     build:
+#       context: ./WriteToStorageService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+#       - ${PATH_IMAGE}:/image_save
+#       - ${PATH_BACKUP}:/argus_system_backup
+#     ports:
+#       - ${WTS_SUP_PROMETHEUS_PORT}:50042
+#     depends_on:
+#       - redis
+#       - mariadb
+#       - coilcreatorservice
+#       #- daqservice_sup
+#       - linestitchservice_sup
+#     environment:
+#         CONTAINER_NAME: writetostorageservice_sup
+
+#         SYSTEM_ID: ${WTS_SUP_SYSTEM_ID}
+#         PATH_IMAGE: ${WTS_SUP_PATH_IMAGE}
+
+#         PROMETHEUS_PORT: ${WTS_SUP_PROMETHEUS_PORT}
+        
+#         REDIS_HOST: ${WTS_SUP_REDIS_HOST}
+#         REDIS_PORT: ${WTS_SUP_REDIS_PORT}
+#         REDIS_DB: ${WTS_SUP_REDIS_DB}
+
+#         REDIS_STREAM_KEY: ${WTS_SUP_REDIS_STREAM_KEY}
+#         REDIS_LEN_STREAM: ${WTS_SUP_REDIS_LEN_STREAM}
+
+#         REDIS_KEY_CAM_PUB: ${WTS_SUP_REDIS_KEY_CAM_PUB}
+
+#         MARIADB_HOST: ${WTS_SUP_MARIADB_HOST}
+#         MARIADB_USER: ${WTS_SUP_MARIADB_USER}
+#         MARIADB_PASSWORD:  ${WTS_SUP_MARIADB_PASSWORD}
+#         MARIADB_DATABASE: ${WTS_SUP_MARIADB_DATABASE}
+#         MARIADB_PORT: ${WTS_SUP_MARIADB_PORT}
+
+#         MILIMETROS_PER_PIXEL_HEIGHT: ${WTS_SUP_MILIMETROS_PER_PIXEL_HEIGHT}
+#         MILIMETROS_PER_PIXEL_WIDTH: ${WTS_SUP_MILIMETROS_PER_PIXEL_WIDTH}
+
+#         CONFIG_CLASS_DALSA_IMAGE_HANDLER: ${WTS_SUP_CONFIG_CLASS_DALSA_IMAGE_HANDLER} 
+
+#         IMG_TYPE_1_SCALE_X: ${WTS_SUP_IMG_TYPE_1_SCALE_X}
+#         IMG_TYPE_1_SCALE_Y: ${WTS_SUP_IMG_TYPE_1_SCALE_Y}
+
+#         IMG_TYPE_2_SCALE_X: ${WTS_SUP_IMG_TYPE_2_SCALE_X}
+#         IMG_TYPE_2_SCALE_Y: ${WTS_SUP_IMG_TYPE_2_SCALE_Y}
+
+#         IMG_TYPE_3_SCALE_X: ${WTS_SUP_IMG_TYPE_3_SCALE_X}
+#         IMG_TYPE_3_SCALE_Y: ${WTS_SUP_IMG_TYPE_3_SCALE_Y}
+              
+#     networks:
+#       - my_network_argus
+
+# ##########################################################################
+
+#   ### Cam INF ###
+
+#   daqservice_inf:
+#     container_name: daqservice_inf
+#     restart: always
+#     build:
+#       context: ./DaqService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+
+#     depends_on:
+#       - redis
+#       - coilcreatorservice
+#     environment:
+#       CONTAINER_NAME: daqservice_inf
+
+
+      
+#       REDIS_HOST: ${DS_INF_REDIS_HOST}
+#       REDIS_PORT: ${DS_INF_REDIS_PORT}
+#       REDIS_DB: ${DS_INF_REDIS_DB}
+#       REDIS_STREAM_KEY: ${DS_INF_REDIS_STREAM_KEY}
+#       REDIS_LEN_STREAM: ${DS_INF_REDIS_LEN_STREAM}
+#       CONFIG_CLASS_DALSA_IMAGE_HANDLER: ${DS_INF_CONFIG_CLASS_DALSA_IMAGE_HANDLER}
+#       CAM_USER_ID: ${DS_INF_CAM_USER_ID}
+#       REDIS_PUBSUB_KEY: ${DS_INF_REDIS_PUBSUB_KEY}
+#       PROMETHEUS_PORT: ${DS_INF_PROMETHEUS_PORT}
+
+#     network_mode: "host"
+
+
+
+#   linestitchservice_inf:
+#     container_name: linestitchservice_inf
+#     restart: always
+#     build:
+#       context: ./LineStitchService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+#     ports:
+#       - ${LS_INF_PROMETHEUS_PORT}:50042
+#     depends_on:
+#       - redis
+#       - daqservice_inf
+#     environment:
+#       CONTAINER_NAME: linestitchservice_inf
+
+#       MARIADB_HOST: ${LS_INF_MARIADB_HOST}
+#       MARIADB_USER: ${LS_INF_MARIADB_USER}
+#       MARIADB_PASSWORD:  ${LS_INF_MARIADB_PASSWORD}
+#       MARIADB_DATABASE: ${LS_INF_MARIADB_DATABASE}
+#       MARIADB_PORT: ${LS_INF_MARIADB_PORT}
+
+#       PROMETHEUS_PORT: ${LS_INF_PROMETHEUS_PORT}
+
+#       REDIS_PORT_1: ${LS_INF_REDIS_PORT_1}
+#       REDIS_HOST_1: ${LS_INF_REDIS_HOST_1}
+#       REDIS_DB_1: ${LS_INF_REDIS_DB_1}
+#       REDIS_STREAM_KEY_1: ${LS_INF_REDIS_STREAM_KEY_1}
+#       REDIS_LEN_STREAM_1: ${LS_INF_REDIS_LEN_STREAM_1}
+
+#       REDIS_PORT_2: ${LS_INF_REDIS_PORT_2}
+#       REDIS_HOST_2: ${LS_INF_REDIS_HOST_2}
+#       REDIS_DB_2: ${LS_INF_REDIS_DB_2}
+#       REDIS_STREAM_KEY_2: ${LS_INF_REDIS_STREAM_KEY_2}
+#       REDIS_LEN_STREAM_2: ${LS_INF_REDIS_LEN_STREAM_2}
+
+#       IMG_WIDTH: ${LS_INF_IMG_WIDTH}
+#       TILE_HEIGHT: ${LS_INF_TILE_HEIGHT}
+#       CONCAT_HEIGHT: ${LS_INF_CONCAT_HEIGHT}
+
+#       CONVERSION_RATIO: ${LS_INF_CONVERSION_RATIO}
+#       THRESHOLD_VALUE: ${LS_INF_THRESHOLD_VALUE}
+
+#       OP_KSIZE_0: ${LS_INF_OP_KSIZE_0}
+#       OP_KSIZE_1: ${LS_INF_OP_KSIZE_1}
+
+#       CL_KSIZE_0: ${LS_INF_CL_KSIZE_0}
+#       CL_KSIZE_1: ${LS_INF_CL_KSIZE_1}
+
+
+#       ITERATIONS: ${LS_INF_ITERATIONS}
+#       RADIUS: ${LS_INF_RADIUS}
+#       PI: ${LS_INF_PI}
+
+#       SAMPLING_INTERVAL: ${LS_INF_SAMPLING_INTERVAL}
+#       MEAS_DISTANCE: ${LS_INF_MEAS_DISTANCE}
+
+#       MAX_DEVIATION: ${LS_INF_MAX_DEVIATION}
+#       SAFETY_MARGIN: ${LS_INF_SAFETY_MARGIN}
+#       WIDTH_DEVIATION: ${LS_INF_WIDTH_DEVIATION}
+      
+#       REFERENCE_CENTER: ${LS_INF_REFERENCE_CENTER}
+#       LARGEST_WIDTH: ${LS_INF_LARGEST_WIDTH}
+
+#       IMAGE_NUMBER_ROTATE_DEGREES_90: ${LS_INF_IMAGE_NUMBER_ROTATE_DEGREES_90}
+
+#     networks:
+#       - my_network_argus
+
+
+#   writetostorageservice_inf:
+#     container_name: writetostorageservice_inf
+#     restart: always
+#     build:
+#       context: ./WriteToStorageService
+#       dockerfile: Dockerfile
+#     volumes:  
+#       - ${PATH_LOG}:/argus_system_log
+#       - ${PATH_IMAGE}:/image_save
+#       - ${PATH_BACKUP}:/argus_system_backup
+#     ports:
+#       - ${WTS_INF_PROMETHEUS_PORT}:50042
+#     depends_on:
+#       - redis
+#       - mariadb
+#       - coilcreatorservice
+#       #- daqservice_sup
+#       - linestitchservice_inf
+#     environment:
+#         CONTAINER_NAME: writetostorageservice_inf
+
+#         SYSTEM_ID: ${WTS_INF_SYSTEM_ID}
+#         PATH_IMAGE: ${WTS_INF_PATH_IMAGE}
+
+#         PROMETHEUS_PORT: ${WTS_INF_PROMETHEUS_PORT}
+        
+#         REDIS_HOST: ${WTS_INF_REDIS_HOST}
+#         REDIS_PORT: ${WTS_INF_REDIS_PORT}
+#         REDIS_DB: ${WTS_INF_REDIS_DB}
+
+#         REDIS_STREAM_KEY: ${WTS_INF_REDIS_STREAM_KEY}
+#         REDIS_LEN_STREAM: ${WTS_INF_REDIS_LEN_STREAM}
+
+#         REDIS_KEY_CAM_PUB: ${WTS_INF_REDIS_KEY_CAM_PUB}
+
+#         MARIADB_HOST: ${WTS_INF_MARIADB_HOST}
+#         MARIADB_USER: ${WTS_INF_MARIADB_USER}
+#         MARIADB_PASSWORD:  ${WTS_INF_MARIADB_PASSWORD}
+#         MARIADB_DATABASE: ${WTS_INF_MARIADB_DATABASE}
+#         MARIADB_PORT: ${WTS_INF_MARIADB_PORT}
+
+#         MILIMETROS_PER_PIXEL_HEIGHT: ${WTS_INF_MILIMETROS_PER_PIXEL_HEIGHT}
+#         MILIMETROS_PER_PIXEL_WIDTH: ${WTS_INF_MILIMETROS_PER_PIXEL_WIDTH}
+
+#         CONFIG_CLASS_DALSA_IMAGE_HANDLER: ${WTS_INF_CONFIG_CLASS_DALSA_IMAGE_HANDLER} 
+
+#         IMG_TYPE_1_SCALE_X: ${WTS_INF_IMG_TYPE_1_SCALE_X}
+#         IMG_TYPE_1_SCALE_Y: ${WTS_INF_IMG_TYPE_1_SCALE_Y}
+
+#         IMG_TYPE_2_SCALE_X: ${WTS_INF_IMG_TYPE_2_SCALE_X}
+#         IMG_TYPE_2_SCALE_Y: ${WTS_INF_IMG_TYPE_2_SCALE_Y}
+
+#         IMG_TYPE_3_SCALE_X: ${WTS_INF_IMG_TYPE_3_SCALE_X}
+#         IMG_TYPE_3_SCALE_Y: ${WTS_INF_IMG_TYPE_3_SCALE_Y}
+#     networks:        
+#       - my_network_argus
+
+
+
+
+
+
+# ##scp automacao@10.247.141.99:"/mnt/md3/volume_argus/image_save/$(ls -t /mnt/md3/volume_argus/image_save/ | head -n 200)" /home/igor/Pictures/imagens-argus/
+
+# ##sudo docker stop $(sudo docker ps -aq)
+
+# #sudo docker compose up --build redis mariadb phpmyadmin pimsrequestservice daqservice_sup linestitchservice_sup
+
+# #setxkbmap -model pc105 -layout br -variant abnt2 
+
+
+# # sudo docker compose up --build redis mariadb phpmyadmin coilcreatorservice prometheus grafana inferenceservice buldogbackend buldogfrontend daqservice_sup linestitchservice_sup writetostorageservice_sup
+
+
+

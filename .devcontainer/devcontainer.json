@@ -1,0 +1,10 @@
+{
+    "name": "devcontainer", // Nome da configuração da Dev Container
+    "dockerComposeFile": [
+        "../docker-compose.yml", // Arquivos Docker Compose a serem utilizados
+        "./docker-compose.yml" // O docker-compose.dev.yml permite sobrescrever configurações definidas no docker-compose.yml principal. Isso é útil para ajustar serviços durante o desenvolvimento.
+    ],
+    "service": "api_model", // O serviço no docker-compose.yml que queremos que o VS Code utilize como um contêiner de desenvolvimento
+    "shutdownAction": "stopCompose", // Ação ao encerrar a Dev Container
+    "workspaceFolder": "/workspaces/" // Obrigatório, não altere. Caminho para a pasta de trabalho dentro da Dev Container
+}
