@@ -9,8 +9,6 @@ class MedicaoSchema(BaseModel):
     data: Optional[datetime] = None
     placa_id: int
 
-    class Config:
-        orm_mode = True
 
 class MedicaoUpdateSchema(BaseModel):
     valor: Optional[float] = None
@@ -19,5 +17,3 @@ class MedicaoUpdateSchema(BaseModel):
     data: Optional[datetime] = None
     placa_id: int
 
-    class Config:
-        orm_mode = True
