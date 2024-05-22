@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
+import Nav from "./components/Nav"
+import Provider from "./components/Provider"
+
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -16,9 +20,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-      <link rel="shortcut icon" href="/favicon.ico" />
-        {children}
+      <body>
+
+    
+        <div className="main">
+          <div className="gradient" />
+        </div>
+          
+
+        <main className="app">
+          <Nav></Nav>
+          
+          {children}
+        </main>
+
+
       </body>
     </html>
   );
